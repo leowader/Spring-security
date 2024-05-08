@@ -8,7 +8,8 @@ import com.jwt.authentication.models.RegisterRequest;
 import com.jwt.authentication.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +19,7 @@ public class AuthServiceImp implements AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final AuthenticationManager authenticationManager;
     @Override
     public AuthResponse register(RegisterRequest request) {
         var user = User.builder()
@@ -35,6 +37,14 @@ public class AuthServiceImp implements AuthService {
 
     @Override
     public AuthResponse login(LoginRequest request) {
-        return null;
+        authenticationManager.authenticate( new UsernamePasswordAuthenticationToken(
+                request.getUsername(),
+                request.getPassword()
+        ));
+        var user = userRepository.findUserByUsername(request.getUsername()).orElseThrow();
+
+        System.out.println("------USUARIO ENCONTRADO--"+user.getUsername());
+        var jwtToken = jwtService.generateToken(user);
+        return AuthResponse.builder().token(jwtToken).build();
     }
 }
